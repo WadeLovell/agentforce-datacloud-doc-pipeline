@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Extract procedures from HTML snapshots.
-Identifies sections with step-by-step instructions.
+Extract procedures from MadCap Flare HTML snapshots.
+Tailored for Springbrook documentation structure.
 """
 
 from bs4 import BeautifulSoup
@@ -17,7 +17,7 @@ def extract_procedures():
         print("❌ No raw/html directory found. Run snapshot first.")
         return
     
-    html_files = list(html_dir.glob("*.html"))
+    html_files = list(html_dir.glob("*.html")) + list(html_dir.glob("*.htm"))
     
     if not html_files:
         print("❌ No HTML files found in raw/html/")
@@ -31,42 +31,71 @@ def extract_procedures():
         try:
             soup = BeautifulSoup(html_file.read_text(encoding='utf-8'), "lxml")
             
-            # Remove script and style elements
-            for element in soup(['script', 'style', 'nav', 'header', 'footer']):
-                element.decompose()
+            # Get title from h1 or h2.TopicTitle
+            title_elem = soup.select_one('h1')
+            if not title_elem:
+                continue
             
-            # Strategy 1: Look for section elements
-            for section in soup.select("section, article, .procedure, .steps"):
-                title_elem = section.find(["h1", "h2", "h3", "h4"])
-                steps = section.find_all("li")
-                
-                if title_elem and len(steps) >= 2:
-                    procedures.append({
-                        "title": title_elem.get_text(strip=True),
-                        "steps": [s.get_text(strip=True) for s in steps if s.get_text(strip=True)],
-                        "source_file": html_file.name
-                    })
+            title = title_elem.get_text(strip=True)
             
-            # Strategy 2: Look for ordered lists with preceding headings
-            for ol in soup.find_all("ol"):
-                prev_heading = None
-                for prev in ol.find_all_previous(["h1", "h2", "h3", "h4"]):
-                    prev_heading = prev
-                    break
+            # Skip index/menu pages
+            if 'Index' in title or len(title) < 5:
+                continue
+            
+            steps = []
+            
+            # Strategy 1: Find MCDropDown sections (Springbrook's step containers)
+            dropdowns = soup.select('div.MCDropDown')
+            for dropdown in dropdowns:
+                # Get the step header (contains step number and title)
+                header = dropdown.select_one('.MCDropDownHead, .dropDownHead')
+                if header:
+                    header_text = header.get_text(strip=True)
+                    # Clean up the text
+                    header_text = re.sub(r'\s+', ' ', header_text)
+                    if len(header_text) > 5:
+                        steps.append(header_text)
                 
-                steps = ol.find_all("li")
-                if prev_heading and len(steps) >= 2:
-                    title = prev_heading.get_text(strip=True)
-                    # Avoid duplicates
-                    if not any(p["title"] == title for p in procedures):
-                        procedures.append({
-                            "title": title,
-                            "steps": [s.get_text(strip=True) for s in steps if s.get_text(strip=True)],
-                            "source_file": html_file.name
-                        })
-                        
+                # Get sub-steps from the dropdown body
+                body = dropdown.select_one('.MCDropDownBody, .dropDownBody')
+                if body:
+                    for li in body.find_all('li', recursive=True):
+                        text = li.get_text(strip=True)
+                        text = re.sub(r'\s+', ' ', text)
+                        if len(text) > 15 and not text.startswith(('Click here', 'Getting Started')):
+                            steps.append(f"  • {text}")
+            
+            # Strategy 2: If no dropdowns, look for "Step by Step" section
+            if not steps:
+                step_section = soup.find('b', string=re.compile(r'Step by Step', re.I))
+                if step_section:
+                    # Get all following li elements
+                    parent = step_section.find_parent('p')
+                    if parent:
+                        for sibling in parent.find_next_siblings():
+                            for li in sibling.find_all('li'):
+                                text = li.get_text(strip=True)
+                                text = re.sub(r'\s+', ' ', text)
+                                if len(text) > 15:
+                                    steps.append(text)
+            
+            # Strategy 3: Look for numbered paragraphs
+            if not steps:
+                for p in soup.find_all('p'):
+                    text = p.get_text(strip=True)
+                    if re.match(r'^[1-9]\d?\.\s', text) and len(text) > 20:
+                        steps.append(text)
+            
+            if len(steps) >= 2:
+                procedures.append({
+                    "title": title,
+                    "steps": steps[:30],
+                    "source_file": html_file.name
+                })
+                print(f"    ✓ Found {len(steps)} steps")
+                
         except Exception as e:
-            print(f"    ⚠️  Error processing {html_file.name}: {e}")
+            print(f"    ⚠️  Error: {e}")
     
     # Deduplicate by title
     seen_titles = set()
@@ -79,7 +108,7 @@ def extract_procedures():
     output_path = pathlib.Path("extract/procedures.json")
     output_path.write_text(json.dumps(unique_procedures, indent=2))
     
-    print(f"✅ Extracted {len(unique_procedures)} procedures to extract/procedures.json")
+    print(f"\n✅ Extracted {len(unique_procedures)} procedures to extract/procedures.json")
 
 if __name__ == "__main__":
     extract_procedures()
