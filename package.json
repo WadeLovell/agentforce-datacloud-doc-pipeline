@@ -1,0 +1,22 @@
+{
+  "name": "agentforce-datacloud-doc-pipeline",
+  "version": "1.0.0",
+  "description": "Deterministic documentation pipeline for Salesforce Data Cloud and Agentforce",
+  "type": "module",
+  "scripts": {
+    "snapshot": "node extract/snapshot.js",
+    "setup": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "yaml": "^2.3.4"
+  },
+  "keywords": [
+    "salesforce",
+    "data-cloud",
+    "agentforce",
+    "documentation",
+    "rag"
+  ],
+  "license": "MIT"
+}

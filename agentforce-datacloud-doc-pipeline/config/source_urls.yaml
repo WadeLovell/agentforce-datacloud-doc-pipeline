@@ -1,0 +1,12 @@
+# Source URLs Configuration
+# Modify these values for your banking client's documentation
+
+product: Springbrook Seven
+module: Cirrus
+version: 7.18.7.0
+persona: support_agent
+
+# Add your client's documentation URLs here
+# These should be the root index pages for procedures
+urls:
+  - https://help.sprbrk.com/Seven_Help/7.18.7.0/Content/Cirrus/SO_Index.html

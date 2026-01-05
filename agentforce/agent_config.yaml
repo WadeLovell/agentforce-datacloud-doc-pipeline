@@ -1,0 +1,112 @@
+# Agentforce Agent Configuration
+# Maps 1:1 to Salesforce UI / API configuration
+# For middle-market banking POC
+
+agentforce:
+  agent:
+    api_name: Support_Procedure_Agent
+    label: Support Procedure Agent
+    description: >
+      Agentforce support agent grounded exclusively in Data Cloud
+      procedure-level documentation. Designed for middle-market banking
+      compliance requirements with explainable AI capabilities.
+    status: active
+    agent_type: support
+
+  # Data Source Binding (Data Cloud)
+  data_sources:
+    - type: datacloud_unstructured
+      name: Agentforce_Support_Procedures
+      description: >
+        Procedure-level support documentation ingested via
+        Data Cloud unstructured ingestion pipeline.
+
+      indexing:
+        mode: semantic
+        language: en
+        chunking:
+          max_tokens: 800
+          overlap_percentage: 15
+          boundary_hints:
+            - heading
+            - numbered_list
+
+  # Retrieval Configuration
+  retrieval:
+    retrieval_strategy: semantic
+    grounding_required: true
+    top_k: 5
+
+    filters:
+      # Static filters - always applied
+      static:
+        - field: persona
+          operator: equals
+          value: support_agent
+
+        - field: content_type
+          operator: equals
+          value: procedure
+
+      # Dynamic filters - injected at runtime from context
+      dynamic:
+        - field: product
+          source: runtime_context.product
+
+        - field: module
+          source: runtime_context.module
+
+        - field: version
+          operator: less_than_or_equal
+          source: runtime_context.version
+
+  # Prompt Builder Configuration
+  prompt:
+    system_message: |
+      You are a support agent for a middle-market banking institution.
+
+      Use only retrieved Data Cloud documentation.
+      Return procedures as numbered steps in the order provided.
+      Do not invent, infer, or merge steps.
+      If no procedure is retrieved, state that the procedure is not documented.
+      
+      For compliance: Always cite the source document when providing procedures.
+
+    response_format:
+      style: procedural
+      numbered_steps: required
+      citations: required
+
+  # Guardrails (Critical for Banking Compliance)
+  guardrails:
+    grounding:
+      require_retrieval: true
+      allow_external_knowledge: false
+
+    hallucination_controls:
+      allow_step_inference: false
+      allow_cross_document_merging: false
+
+    fallback_behavior:
+      no_results_response: >
+        I do not have a documented procedure for that request.
+        Please contact your supervisor or compliance officer for guidance.
+
+  # Citations & Explainability (Required for Banking)
+  citations:
+    enabled: true
+    source_label: Data Cloud Procedure
+    include_source_metadata:
+      - product
+      - module
+      - version
+      - source_file
+      - title
+
+  # Observability & Audit (Recommended for Banking)
+  observability:
+    log_retrieval_results: true
+    log_applied_filters: true
+    log_citations: true
+    retention_policy:
+      logs_retention_days: 90  # Align to bank's retention policy

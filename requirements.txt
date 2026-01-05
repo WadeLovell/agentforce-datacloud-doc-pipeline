@@ -1,0 +1,8 @@
+beautifulsoup4
+lxml
+pyyaml
+requests
+python-frontmatter
+
+# NOTE: Playwright is installed separately (Node-based)
+# npm install -g playwright && npx playwright install chromium

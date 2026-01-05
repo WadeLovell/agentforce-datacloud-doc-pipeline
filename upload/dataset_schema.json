@@ -1,0 +1,15 @@
+{
+  "name": "Agentforce_Support_Procedures",
+  "type": "Unstructured",
+  "description": "Procedure-level support documentation for Agentforce grounding in middle-market banking context",
+  "fields": [
+    { "name": "content", "type": "Text", "description": "Full procedure content for semantic indexing" },
+    { "name": "product", "type": "Text", "description": "Product name for filtering" },
+    { "name": "module", "type": "Text", "description": "Module name for filtering" },
+    { "name": "version", "type": "Text", "description": "Documentation version" },
+    { "name": "persona", "type": "Text", "description": "Target persona (support_agent, customer, etc.)" },
+    { "name": "content_type", "type": "Text", "description": "Content type (procedure, reference, etc.)" },
+    { "name": "source_file", "type": "Text", "description": "Original source filename for audit trail" },
+    { "name": "title", "type": "Text", "description": "Procedure title for display" }
+  ]
+}

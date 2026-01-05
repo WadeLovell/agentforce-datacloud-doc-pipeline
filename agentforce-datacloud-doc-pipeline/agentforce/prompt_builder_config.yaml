@@ -1,0 +1,43 @@
+# Prompt Builder Configuration
+# Reference YAML for Agentforce Prompt Builder setup
+# Translate this 1:1 to UI fields in Setup → Prompt Builder
+
+prompt:
+  name: Support_Procedure_Agent
+  description: >
+    Agentforce support agent grounded in Data Cloud procedure documentation.
+    Designed for middle-market banking with compliance-first approach.
+
+# Retrieval settings bound to Data Cloud
+retrieval:
+  source_type: datacloud_unstructured
+  dataset: Agentforce_Support_Procedures
+  search_mode: semantic
+  top_k: 5
+  grounding_required: true
+  citation_enabled: true
+
+# Mandatory filters (always applied)
+filters:
+  - field: persona
+    operator: equals
+    value: support_agent
+  
+  - field: content_type
+    operator: equals
+    value: procedure
+
+# Response formatting
+response:
+  style: procedural
+  formatting:
+    numbered_steps: required
+    headings: allowed
+  fallback_behavior:
+    if_no_results: >
+      I do not have a documented procedure for that request.
+
+# Guardrails
+guardrails:
+  disallow_external_knowledge: true
+  disallow_step_invention: true
